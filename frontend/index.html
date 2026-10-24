@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>云商城 - 首页</title>
+    <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+    <div class="nav">
+        <div class="nav-inner">
+            <div class="logo"><a href="index.html">云商城</a></div>
+            <div class="nav-menu">
+                <a href="index.html">商品首页</a>
+                <a href="cart.html">购物车</a>
+                <a href="orders.html">我的订单</a>
+            </div>
+            <div class="user-info" id="userInfo">
+                <a href="login.html">登录</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2 style="margin: 20px 0;">热门云产品</h2>
+        <div class="product-grid" id="productList"></div>
+    </div>
+
+<script>
+const user = JSON.parse(localStorage.getItem('user') || 'null');
+if (user) {
+    document.getElementById('userInfo').innerHTML = `欢迎，${user.username} <a href="#" onclick="logout()">退出</a>`;
+}
+
+function logout() {
+    localStorage.removeItem('user');
+    location.reload();
+}
+
+fetch('/api/product/list?size=12')
+    .then(r => r.json())
+    .then(res => {
+        const list = res.data.list;
+        let html = '';
+        list.forEach(p => {
+            html += `
+            <div class="product-card">
+                <a href="product.html?id=${p.id}">
+                    <img src="${p.image}" alt="${p.name}">
+                </a>
+                <div class="product-info">
+                    <div class="product-name"><a href="product.html?id=${p.id}">${p.name}</a></div>
+                    <div class="product-price">¥${p.price}</div>
+                    <div class="product-stock">库存：${p.stock} 件</div>
+                </div>
+            </div>`;
+        });
+        document.getElementById('productList').innerHTML = html;
+    });
+</script>
+</body>
+</html>

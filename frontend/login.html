@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>登录 - 云商城</title>
+    <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+    <div class="nav">
+        <div class="nav-inner">
+            <div class="logo"><a href="index.html">云商城</a></div>
+        </div>
+    </div>
+
+    <div class="form-card">
+        <h2 id="title">用户登录</h2>
+        <div class="form-item">
+            <label>用户名</label>
+            <input type="text" id="username" placeholder="请输入用户名">
+        </div>
+        <div class="form-item">
+            <label>密码</label>
+            <input type="password" id="password" placeholder="请输入密码">
+        </div>
+        <button class="btn btn-block" onclick="submit()">登录</button>
+        <div class="form-tip">
+            <span id="switchText">还没有账号？</span>
+            <a href="#" id="switchBtn" onclick="switchMode()">立即注册</a>
+        </div>
+    </div>
+
+<script>
+let isLogin = true;
+const redirect = new URLSearchParams(location.search).get('redirect') || 'index.html';
+
+function switchMode() {
+    isLogin = !isLogin;
+    document.getElementById('title').innerText = isLogin ? '用户登录' : '用户注册';
+    document.getElementById('switchText').innerText = isLogin ? '还没有账号？' : '已有账号？';
+    document.getElementById('switchBtn').innerText = isLogin ? '立即注册' : '立即登录';
+}
+
+function submit() {
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value;
+    
+    if (!username || !password) {
+        alert('请输入用户名和密码');
+        return;
+    }
+
+    const url = isLogin ? '/api/user/login' : '/api/user/register';
+    fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+    }).then(r => r.json()).then(res => {
+        if (res.code === 0) {
+            if (isLogin) {
+                localStorage.setItem('user', JSON.stringify(res.data));
+                alert('登录成功');
+                location.href = redirect;
+            } else {
+                alert('注册成功，请登录');
+                switchMode();
+            }
+        } else {
+            alert(res.msg);
+        }
+    });
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>购物车 - 云商城</title>
+    <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+    <div class="nav">
+        <div class="nav-inner">
+            <div class="logo"><a href="index.html">云商城</a></div>
+            <div class="nav-menu">
+                <a href="index.html">商品首页</a>
+                <a href="cart.html">购物车</a>
+                <a href="orders.html">我的订单</a>
+            </div>
+            <div class="user-info" id="userInfo">
+                <a href="login.html">登录</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2 style="margin: 20px 0;">我的购物车</h2>
+        <div id="cartBox"></div>
+    </div>
+
+<script>
+const user = JSON.parse(localStorage.getItem('user') || 'null');
+if (user) {
+    document.getElementById('userInfo').innerHTML = `欢迎，${user.username} <a href="#" onclick="logout()">退出</a>`;
+} else {
+    alert('请先登录');
+    location.href = 'login.html?redirect=cart.html';
+}
+
+function logout() {
+    localStorage.removeItem('user');
+    location.href = 'login.html';
+}
+
+async function renderCart() {
+    const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+    if (cart.length === 0) {
+        document.getElementById('cartBox').innerHTML = '<div class="tip">购物车是空的</div>';
+        return;
+    }
+
+    const items = [];
+    let total = 0;
+    for (const item of cart) {
+        const res = await fetch(`/api/product/info/${item.id}`).then(r => r.json());
+        const product = res.data;
+        const subtotal = product.price * item.num;
+        total += subtotal;
+        items.push({ ...product, num: item.num, subtotal });
+    }
+
+    let html = `
+    <table class="cart-table">
+        <thead>
+            <tr>
+                <th>商品</th>
+                <th>单价</th>
+                <th>数量</th>
+                <th>小计</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody>`;
+    
+    items.forEach((item, index) => {
+        html += `
+        <tr>
+            <td>${item.name}</td>
+            <td>¥${item.price}</td>
+            <td>${item.num}</td>
+            <td style="color:#f56c6c;">¥${item.subtotal.toFixed(2)}</td>
+            <td><a href="#" style="color:#f56c6c;" onclick="removeItem(${index})">删除</a></td>
+        </tr>`;
+    });
+
+    html += `</tbody></table>
+    <div class="total-bar">
+        <span class="total-price">合计：¥${total.toFixed(2)}</span>
+        <button class="btn btn-danger" onclick="checkout()">去结算</button>
+    </div>`;
+
+    document.getElementById('cartBox').innerHTML = html;
+}
+
+function removeItem(index) {
+    let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+    cart.splice(index, 1);
+    localStorage.setItem('cart', JSON.stringify(cart));
+    renderCart();
+}
+
+async function checkout() {
+    if (!user) {
+        location.href = 'login.html?redirect=cart.html';
+        return;
+    }
+    const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+    
+    for (const item of cart) {
+        await fetch('/api/order/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: user.id, product_id: item.id, num: item.num })
+        }).then(r => r.json());
+    }
+    
+    localStorage.setItem('cart', '[]');
+    alert('下单成功！');
+    location.href = 'orders.html';
+}
+
+renderCart();
+</script>
+</body>
+</html>

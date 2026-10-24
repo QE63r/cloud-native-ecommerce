@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>商品详情 - 云商城</title>
+    <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+    <div class="nav">
+        <div class="nav-inner">
+            <div class="logo"><a href="index.html">云商城</a></div>
+            <div class="nav-menu">
+                <a href="index.html">商品首页</a>
+                <a href="cart.html">购物车</a>
+                <a href="orders.html">我的订单</a>
+            </div>
+            <div class="user-info" id="userInfo">
+                <a href="login.html">登录</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="product-detail" id="detailBox">
+            <div class="tip">加载中...</div>
+        </div>
+    </div>
+
+<script>
+const user = JSON.parse(localStorage.getItem('user') || 'null');
+if (user) {
+    document.getElementById('userInfo').innerHTML = `欢迎，${user.username} <a href="#" onclick="logout()">退出</a>`;
+}
+
+function logout() {
+    localStorage.removeItem('user');
+    location.reload();
+}
+
+const productId = new URLSearchParams(location.search).get('id');
+
+fetch(`/api/product/info/${productId}`)
+    .then(r => r.json())
+    .then(res => {
+        const p = res.data;
+        document.getElementById('detailBox').innerHTML = `
+            <img src="${p.image}" alt="${p.name}">
+            <div class="detail-info">
+                <h1>${p.name}</h1>
+                <div class="detail-price">¥${p.price}</div>
+                <div class="detail-desc">${p.description}</div>
+                <div style="color:#666; margin-bottom:10px;">库存：${p.stock} 件</div>
+                <div class="buy-box">
+                    <span>数量：</span>
+                    <input type="number" id="num" value="1" min="1" max="${p.stock}">
+                    <button class="btn" onclick="addToCart()">加入购物车</button>
+                    <button class="btn btn-danger" onclick="buyNow()">立即购买</button>
+                </div>
+            </div>
+        `;
+    });
+
+function addToCart() {
+    if (!user) {
+        alert('请先登录');
+        location.href = 'login.html?redirect=product.html?id=' + productId;
+        return;
+    }
+    const num = parseInt(document.getElementById('num').value);
+    let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+    const exist = cart.find(item => item.id == productId);
+    if (exist) {
+        exist.num += num;
+    } else {
+        cart.push({ id: productId, num });
+    }
+    localStorage.setItem('cart', JSON.stringify(cart));
+    alert('已加入购物车');
+}
+
+function buyNow() {
+    addToCart();
+    location.href = 'cart.html';
+}
+</script>
+</body>
+</html>
